@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>問卷</title>
+  <style>
+    /* http://meyerweb.com/eric/tools/css/reset/v2.0 | 20110126 License: none (public domain) */
+    html, body, div, span, applet, object, iframe,h1, h2, h3, h4, h5, h6, p, blockquote, pre,a, abbr, acronym, address, big, cite, code,del, dfn, em, img, ins, kbd, q, s, samp,small, strike, strong, sub, sup, tt, var,b, u, i, center,dl, dt, dd, ol, ul, li,fieldset, form, label, legend,table, caption, tbody, tfoot, thead, tr, th, td,article, aside, canvas, details, embed, figure, figcaption, footer, header, hgroup, menu, nav, output, ruby, section, summary,time, mark, audio, video {
+      margin: 0;
+      padding: 0;
+      border: 0;
+      font-size: 100%;
+      font: inherit;
+      vertical-align: baseline;
+    }
+
+    /* HTML5 display-role reset for older browsers */
+    article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, section {
+      display: block;
+    }
+    ol, ul {
+      list-style: none;
+    }
+    blockquote, q {
+      quotes: none;
+    }
+    blockquote:before, blockquote:after,q:before, q:after {
+      content: '';
+      content: none;
+    }
+    table {
+      border-collapse: collapse;
+      border-spacing: 0;
+    }
+
+    /*這邊開始是自己設的css*/
+    body {
+      line-height: 1;
+      width:85%;
+      margin:0 auto 20px auto;
+    }
+    header{
+      /* background-color:rgb(135, 77, 71); */
+      margin:0 auto 20px auto;
+    }
+    h1{
+      text-align: center;
+      line-height: 1.5;
+      padding:15px;
+    }
+    .question {
+          margin-bottom: 20px;
+    }
+    .option {
+      padding: 0px 5px 10px 5px;
+      background-color: sandybrown;
+      display: inline-block;
+    }
+    .option input {
+      margin-right: 5px;
+    }
+    .textarea {
+      width: calc(100% - 40px); /* 確保適應父容器 */
+      height: 40px;
+      margin: 10px 20px;
+    }
+    .p-strong{
+      font-weight: bolder;
+      display: inline;
+    }
+/*有一鍵複製、一鍵下載、一鍵清除*/
+/*選項不換行*/
+/*點選項可以出現說明欄或新的選項*/
+/*照顧者是否身障者(施工中)*/
+  </style>
+</head>
+<body>
+  <header>
+    <h1>宜蘭縣長期照顧服務管理所<br>身障需求評估電話訪問摘要</h1>
+    <button id="copy-btn">一鍵複製</button>
+    <button id="download-btn">下載結果</button>
+    <button onclick="clearForm()">清除所有內容</button>
+    <p style="margin:15px 0px">目前壞掉的部分：一鍵清除、問卷內容動態生成</p>
+    <p>目前有的功能：一鍵複製、一鍵下載</p>
+  </header>
+  <main>
+    <div id="questionnaire">
+      <div id="section1">
+        <h2>一、個案概況</h2>
+      </div>
+      <div id="section2">
+        <h2>二、家庭概況</h2>
+      </div>
+      <div id="section3">
+        <h2>三、資源使用狀況</h2>
+      </div>
+      <div id="section4">
+        <h2>四、目前所遇困難或待協助需求事項</h2>
+        <p style="display: inline-block;">說明：</p><input type="text">
+      </div>
+    </div>
+  </main>
+  <footer></footer>
+  <script>
+    const questions = {
+      section1:[
+      {
+        title: "認知能力",
+        type: "multiple-choice", // 複選
+        options: ["無困難", "可聽懂簡單指令", "答非所問", "時好時壞", "混亂", "記憶退化", "無意識", "與其大聲說話" , "其他"],
+      },
+      {
+        title: "表達功能",
+        type: "multiple-choice", // 複選
+        options: ["無困難", "可使用簡單字句", "一問一答", "只用單字／詞回復", "鮮少開口", "構音不標準", "仿說", "無法評估" , "其他"],
+      },
+      {
+        title: "精神狀況",
+        type: "multiple-choice", // 複選
+        options: ["情緒穩定", "情緒不穩定", "幻聽、幻覺", "妄想", "脫序行為", "人際退縮", "憂鬱", "嗜睡", "其他"],
+      },
+      {
+        title: "就醫情形",
+        type: "multiple-choice", // 複選
+        options: ["定期就醫（包含處方籤、復健、醫師巡診、居家醫療）", "生病卻長期未就醫", "其他"],
+      },
+      {
+        title: "行動能力",
+        type: "multiple-choice", // 複選
+        options: ["無困難", "易跌倒", "慢慢走", "小碎步", "拖步", "跛行", "無法行走", "其他"],
+      },
+      {
+        title: "肢體障礙",
+        type: "multiple-choice", // 複選
+        options: ["無困難", "左上肢", "右上肢", "雙上肢", "左下肢", "右下肢", "雙下肢", "全癱", "其他"],
+      },
+      {
+        title: "生活自理狀況",
+        type: "multiple-choice", // 複選
+        options: ["可自理", "須部份協助", "須完全協助", "協助者：家人", "協助者：朋友", "協助者：看護／外籍看護", "其他"],
+      },
+      {
+        title: "輔具使用",
+        options: ["無", "有"],
+        type: "multiple-choice", // 複選
+        subOption:["單拐","四腳拐","助行器","輪椅","助聽器","沐浴椅","便盆椅","其他"],
+      },
+      {
+        title: "就業狀況",
+        type: "multiple-choice", // 複選
+        options: ["無", "就業中", "退休", "其他"],
+        subOption:["工作類別"],
+      },
+      {
+        title: "交通能力",
+        options: ["無", "有"],
+        type: "multiple-choice", // 複選
+        subOption:["搭乘大眾運輸工具", "自行開車／騎機車／腳踏車", "復康巴士", "家人接送", "其他"],
+      },
+      {
+        title: "居住狀況",
+        type: "multiple-choice", // 複選
+        options: ["獨居", "居住外縣市", "與家人親友同住","入住機構","其他"],
+      },
+      {
+        title: "使用長照服務",
+        options: ["無", "有", "其他"],
+        type: "multiple-choice", // 複選
+        subOption:["居家服務", "社區服務(日照中心、C據點)"],
+      },
+    ],
+      section2:[
+        {
+          title: "家庭成員及彼此關係",
+          type: "input-only", // 沒有選項，只有輸入框
+        },
+        {
+          title: "主要照顧者",
+          type: "multiple-choice", // 複選
+          options: ["無", "有"],
+        },
+        {
+          title: "次要照顧者",
+          type: "multiple-choice", // 複選
+          options: ["無", "有"],
+        },
+        {
+          title: "經濟來源",
+          type: "multiple-choice", // 複選
+          options: ["有穩定來源", "不穩定", "無收入", "依靠存款",  "家人經濟援助","福利補助","其他",],
+          subOption:["國民年金","老人年金","老農津貼","勞退","漁退","公退","農退","榮民退"],
+        }
+      ],
+      section3:[
+      {
+        title: "已使用資源",
+        type: "input-only", // 沒有選項，只有輸入框
+      },
+      {
+        title: "已建議使用／資源提供",
+        options: ["身障證明請領補換", "生活補助", "牌照稅減免補助", "健保費及掛號費減免",  "復康巴士","喘息服務資源等項服務"],
+      },
+    ]
+    }
+
+// 生成表單內容
+function generateQuestions() {
+    Object.keys(questions).forEach(section => {
+        const sectionDiv = document.getElementById(section);
+        
+        // 檢查 section 是否存在，避免錯誤
+        if (!sectionDiv) {
+            console.error(`找不到 id 為 ${section} 的元素，請確認 HTML 是否有對應的 div`);
+            return;
+        }
+
+        questions[section].forEach(q => {
+            const questionDiv = document.createElement("div");
+            questionDiv.innerHTML = `<p>${q.title}</p>`;
+
+            if (q.type === "multiple-choice") {
+                q.options.forEach(opt => {
+                    const input = document.createElement("input");
+                    input.type = "checkbox";
+                    input.name = q.title;
+                    input.value = opt;
+                    input.id = q.title + "_" + opt;
+                    questionDiv.appendChild(input);
+                    
+                    const label = document.createElement("label");
+                    label.htmlFor = input.id;
+                    label.appendChild(document.createTextNode(opt));
+                    questionDiv.appendChild(label);
+                });
+
+                // 如果有 subOption，則在「有」被選取時顯示
+                if (q.subOption) {
+                    const subDiv = document.createElement("div");
+                    subDiv.style.display = "none"; // 預設隱藏
+
+                    q.subOption.forEach(subOpt => {
+                        const subInput = document.createElement("input");
+                        subInput.type = "checkbox";
+                        subInput.name = q.title + "_sub";
+                        subInput.value = subOpt;
+                        subDiv.appendChild(subInput);
+
+                        const subLabel = document.createElement("label");
+                        subLabel.appendChild(document.createTextNode(subOpt));
+                        subDiv.appendChild(subLabel);
+                    });
+
+                    questionDiv.appendChild(subDiv);
+
+                    // 監聽 "有" 的選擇
+                    const mainCheckbox = questionDiv.querySelector(`input[value="有"]`);
+                    if (mainCheckbox) {
+                        mainCheckbox.addEventListener("change", function () {
+                            subDiv.style.display = this.checked ? "block" : "none";
+                        });
+                    }
+                }
+            } else if (q.type === "input-only") {
+                const input = document.createElement("input");
+                input.type = "text";
+                questionDiv.appendChild(input);
+            }
+
+            sectionDiv.appendChild(questionDiv);
+        });
+    });
+}
+
+generateQuestions();
+
+// 建立一般輸入框
+function createInput(id, type, placeholder) {
+  const inputField = document.createElement("input");
+  inputField.type = type;
+  inputField.placeholder = placeholder;
+  inputField.id = id;
+  return inputField;
+}
+
+// **建立主要/次要照顧者的額外輸入欄**
+function createCaregiverTemplate(questionId) {
+  const templateDiv = document.createElement("div");
+  templateDiv.id = `${questionId}-template`;
+
+  templateDiv.innerHTML = `
+    <span>關係：</span>
+    <input type="text" placeholder="請填寫關係">
+    <span>年齡：</span>
+    <input type="number" placeholder="請填寫年齡">
+    <span>歲</span>
+    <label>
+      <input type="radio" name="${questionId}-disability" value="是"> 是身心障礙者
+      <input type="radio" name="${questionId}-disability" value="否"> 否
+    </label>
+    <div class="disability-input" style="display: none;">
+      <span>第</span>
+      <input type="text" placeholder="請填寫類別">
+      <span>類／健康狀況：</span>
+      <input type="text" placeholder="請填寫健康狀況">
+    </div>
+  `;
+
+  // 綁定「是否為身心障礙者」的邏輯
+  const disabilityRadios = templateDiv.querySelectorAll(`input[name="${questionId}-disability"]`);
+  const disabilityInputDiv = templateDiv.querySelector(".disability-input");
+
+  disabilityRadios.forEach(radio => {
+    radio.addEventListener("change", (e) => {
+      disabilityInputDiv.style.display = e.target.value === "是" ? "block" : "none";
+      if (e.target.value !== "是") {
+        clearInputs(disabilityInputDiv);
+      }
+    });
+  });
+
+  return templateDiv;
+}
+
+
+// 建立額外輸入框並綁定顯示邏輯
+function createInputField(optionId, placeholder, parentDiv, triggerElement, isSingleChoice = false) {
+  const inputField = document.createElement("input");
+  inputField.type = "text";
+  inputField.className = "textarea";
+  inputField.id = `${optionId}-text`;
+  inputField.placeholder = placeholder;
+  inputField.style.display = "none"; // 預設隱藏
+  parentDiv.appendChild(inputField);
+
+  // 監聽選項變更
+  triggerElement.addEventListener("change", (e) => {
+    inputField.style.display = e.target.checked ? "block" : "none";
+
+    // 如果是單選，隱藏其他額外輸入框
+    if (isSingleChoice) {
+      const allInputs = parentDiv.querySelectorAll(".textarea");
+      allInputs.forEach((input) => {
+        if (input !== inputField) {
+          input.style.display = "none";
+          input.value = ""; // 清空其他輸入框的值
+        }
+      });
+    }
+  });
+}
+
+// 生成子選項
+function setupSubOptions(parentOption, subOptions, container, isSingleChoice = false) {
+  const additionalOptionsDiv = document.createElement("div");
+  additionalOptionsDiv.className = "additional-options";
+  additionalOptionsDiv.style.display = "none";
+
+  subOptions.forEach((subOption, index) => {
+    const subId = `${parentOption.id}-sub${index}`;
+    const subLabel = document.createElement("label");
+    subLabel.className = "sub-option";
+    subLabel.innerHTML = `
+      <input type="${isSingleChoice ? "radio" : "checkbox"}" name="${parentOption.id}-sub" value="${subOption}" id="${subId}">
+      ${subOption}
+    `;
+    additionalOptionsDiv.appendChild(subLabel);
+
+    if (subOption === "其他") {
+      createInputField(subId, "請填寫其他內容", additionalOptionsDiv, subLabel.querySelector("input"), isSingleChoice);
+    }
+  });
+
+  container.appendChild(additionalOptionsDiv);
+
+  // 綁定父選項的顯示邏輯
+  parentOption.addEventListener("change", (e) => {
+    additionalOptionsDiv.style.display = e.target.checked ? "block" : "none";
+
+    // 若取消勾選，則清空子選項
+    if (!e.target.checked) {
+      clearInputs(additionalOptionsDiv);
+    }
+  });
+}
+
+// 清空輸入欄
+function clearInputs(container) {
+  const inputs = container.querySelectorAll("input");
+  inputs.forEach(input => {
+    if (input.type === "text" || input.type === "number") {
+      input.value = "";
+    } else if (input.type === "checkbox") {
+      input.checked = false;
+    }
+  });
+}
+
+
+// 複製按鈕
+    document.getElementById("copy-btn").addEventListener("click", () => {
+      let result = "";
+    [...form.querySelectorAll(".question")].forEach((qDiv) => {
+      const title = qDiv.querySelector("strong").textContent;
+      result += `${title}：`;
+
+      const options = [...qDiv.querySelectorAll(".option input")];
+      options.forEach((opt) => {
+        const isChecked = opt.checked ? "■" : "□";
+        const textField = document.getElementById(`${opt.id}-text`);
+        const extra = textField && textField.value.trim() ? `（${textField.value.trim()}）` : "";
+        result += ` ${isChecked} ${opt.value}${extra}`;
+      });
+
+      // 子選項處理
+      const subOptionsDiv = qDiv.querySelector(".additional-options");
+      if (subOptionsDiv) {
+        const subOptions = [...subOptionsDiv.querySelectorAll(".sub-option input")];
+        subOptions.forEach((subOpt) => {
+          const isChecked = subOpt.checked ? "■" : "□";
+          const textField = document.getElementById(`${subOpt.id}-text`);
+          const extra = textField && textField.value.trim() ? `（${textField.value.trim()}）` : "";
+          result += ` ${isChecked} ${subOpt.value}${extra}`;
+        });
+      }
+
+      result += "\n";
+    });
+
+    navigator.clipboard.writeText(result).then(() => {
+      alert("內容已複製！");
+    }).catch(err => {
+      alert("複製失敗，請手動複製！錯誤：" + err);
+    });
+  });
+// 下載按鈕
+    document.getElementById("download-btn").addEventListener("click", () => {
+      const filename = prompt("請輸入問卷編號：", "問卷");
+      if (!filename) return;
+
+      let content = "";
+      const questionsDivs = form.querySelectorAll(".question");
+
+      if (questionsDivs.length === 0) {
+        alert("無法找到問卷內容，請先完成問卷！");
+        return;
+      }
+
+      questionsDivs.forEach((qDiv) => {
+        const title = qDiv.querySelector("strong").textContent;
+        content += `${title}：`;
+
+        const options = [...qDiv.querySelectorAll(".option input")];
+        options.forEach((opt) => {
+          const isChecked = opt.checked ? "■" : "□";
+          const textField = document.getElementById(`${opt.id}-text`);
+          const extra = textField && textField.value.trim() ? `（${textField.value.trim()}）` : "";
+          content += ` ${isChecked} ${opt.value}${extra}`;
+        });
+
+        // 子選項處理
+        const subOptionsDiv = qDiv.querySelector(".additional-options");
+        if (subOptionsDiv) {
+          const subOptions = [...subOptionsDiv.querySelectorAll(".sub-option input")];
+          subOptions.forEach((subOpt) => {
+            const isChecked = subOpt.checked ? "■" : "□";
+            const textField = document.getElementById(`${subOpt.id}-text`);
+            const extra = textField && textField.value.trim() ? `（${textField.value.trim()}）` : "";
+            content += ` ${isChecked} ${subOpt.value}${extra}`;
+          });
+        }
+
+        content += "\n";
+      });
+
+      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `${filename}.txt`;
+      link.click();
+    });
+// 清除所有勾選和填寫的內容
+    function clearForm() {
+      // 清除勾選
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach(checkbox => (checkbox.checked = false));
+      // 清除輸入框
+      document.getElementById(`${subId}-text`).value = "";
+      document.getElementById("surveyId").value = "";
+      alert("已清除所有內容！");
+    }
+    // 清除所有輸入內容
+function clearForm() {
+    document.querySelectorAll("input[type='checkbox'], input[type='radio']").forEach(el => el.checked = false);
+    document.querySelectorAll("input[type='text'], input[type='number']").forEach(el => el.value = '');
+    document.querySelectorAll(".additional-options, .textarea, .disability-input").forEach(el => el.style.display = "none");
+}
+
+// 轉換表單數據為文字
+function getFormData() {
+    let result = "";
+    document.querySelectorAll("#questionnaire div").forEach(section => {
+        section.querySelectorAll("p").forEach(question => {
+            let qText = question.innerText;
+            let checkedInputs = section.querySelectorAll(`input[name="${qText}"]:checked`);
+            let selectedValues = Array.from(checkedInputs).map(input => input.value).join("、");
+            result += `${qText}：${selectedValues || "未填寫"}\n`;
+        });
+    });
+    return result;
+}
+
+// 一鍵複製功能
+document.getElementById("copy-btn").addEventListener("click", () => {
+    const textToCopy = getFormData();
+    navigator.clipboard.writeText(textToCopy).then(() => alert("已複製到剪貼簿！"));
+});
+
+// 下載結果
+document.getElementById("download-btn").addEventListener("click", () => {
+    const text = getFormData();
+    const blob = new Blob([text], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "問卷結果.txt";
+    a.click();
+});
+
+  </script>
+</body>
+</html>
