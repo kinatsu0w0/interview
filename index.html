@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ICF電訪問卷</title>
     <style>
-        /* 定義 CSS 變數 */
         :root {
             --body-bg: #eef1f4;
             --container-bg: #f7f9fb;
@@ -231,6 +230,124 @@
             font-size: 15px;
             font-weight: 100;
         }
+
+        /* 懸浮按鈕樣式 */
+        .welfare-float-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999; /* 確保在最上層 */
+            background-color: #4CAF50; /* 綠色，可依喜好修改 */
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 24px;
+            font-size: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        .welfare-float-btn:hover {
+            transform: scale(1.05);
+            background-color: #45a049;
+        }
+
+        /* 側邊欄樣式 */
+        .welfare-sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px; /* 預設隱藏在右側螢幕外 */
+            width: 350px; /* 側邊欄寬度 */
+            height: 100vh;
+            background-color: #f9f9f9;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            z-index: 10000; /* 比按鈕更高 */
+            transition: right 0.3s ease-in-out; /* 滑動動畫 */
+            display: flex;
+            flex-direction: column;
+            font-family: sans-serif;
+        }
+
+        /* 側邊欄開啟時的狀態 */
+        .welfare-sidebar.open {
+            right: 0;
+        }
+
+        /* 側邊欄內部排版 */
+        .sidebar-header {
+            padding: 15px;
+            background-color: #333;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .sidebar-search {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .sidebar-search input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .sidebar-content {
+            flex-grow: 1;
+            overflow-y: auto; /* 讓內容可以捲動 */
+            padding: 10px;
+        }
+
+        /* 結果卡片樣式 */
+        .welfare-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .welfare-card h4 {
+            margin: 0 0 5px 0;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+
+        .welfare-card p {
+            margin: 3px 0;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .welfare-tag {
+            display: inline-block;
+            background: #e0f7fa;
+            color: #006064;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .loading-text {
+            text-align: center;
+            color: #888;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -289,13 +406,35 @@
     </div>
 
     <div class="container">
-        <h2>電訪問卷<br><span class="murmur">2025.9.11跟長照所開完會後修改的版本</span></h2>
+        <h2>電訪問卷<br>
+        <span class="murmur">2025.9.11跟長照所開完會後修改的版本</span><br>
+        <span class="murmur">2025.11.3變更題目顯示邏輯</span></h2>
         <form id="survey-form"></form>
     </div>
 
+    <button id="welfare-toggle-btn" class="welfare-float-btn">
+        🔍 福利查詢
+    </button>
+
+    <div id="welfare-sidebar" class="welfare-sidebar">
+        <div class="sidebar-header">
+            <h3>身心障礙福利資料庫</h3>
+            <button id="welfare-close-btn" class="close-btn">&times;</button>
+        </div>
+        
+        <div class="sidebar-search">
+            <input type="text" id="welfare-search-input" placeholder="輸入關鍵字搜尋 (例如: 輪椅)...">
+        </div>
+
+        <div class="sidebar-content">
+            <div id="welfare-results-container">
+                <div class="loading-text">資料載入中...</div>
+            </div>
+        </div>
+    </div>
     <script>
         // =========================
-        // 1. 資料結構與變數
+        // 資料結構與變數
         // =========================
         const categories = [
             {
@@ -314,7 +453,7 @@
                     {
                         title: "表達功能",
                         type: "multiple-choice",
-                        options: ["無困難", "可使用簡單字句", "一問一答", "只用單字／詞回復", "鮮少開口", "構音不清", "仿說", "說話緩慢", "無法言語", "使用肢體回應","用手寫回應", { text: "其他／補充說明", hasInputField: true }],
+                        options: ["無困難", "可使用簡單字句", "一問一答", "只用單字／詞回復", "鮮少開口", "構音不清", "仿說", "說話緩慢", "無法言語", "使用肢體回應","用手寫回應", "會回答「是不是」、「好不好」、「要不要」等是非題", { text: "其他／補充說明", hasInputField: true }],
                     },
                     {
                         title: "肢體障礙",
@@ -562,7 +701,7 @@
                         ]
                     },
                     {
-                        title: "主要照顧者",
+                        title: "次要照顧者",
                         type: "single-choice",
                         options: [
                             "無", 
@@ -620,7 +759,7 @@
                                     {
                                         title: "福利補助",
                                         type: "multiple-choice",
-                                        options: ["身心障礙者生活補助", "身心障礙者日間照顧及住宿式照顧費用補助", "住宿式服務機構使用者補助方案","低收生活補助", "國民年金", "老人年金", "老農漁津貼"]
+                                        options: ["身心障礙者生活補助", "身心障礙者日間照顧及住宿式照顧費用補助", "住宿式服務機構使用者補助方案","低收生活補助", "中低收老人生活津貼", "國民年金", "老人年金", "老農漁津貼"]
                                     },
                                 ]
                             },
@@ -707,326 +846,9 @@
             }
         };
 
-        // =========================
-        // 新增的切換主題功能
-        // =========================
-        function switchTheme(themeName) {
-            const root = document.documentElement;
-            const selectedTheme = themes[themeName];
-            for (const property in selectedTheme) {
-                root.style.setProperty(property, selectedTheme[property]);
-            }
-        }
-
-        // =========================
-        // 2. 函式
-        // =========================
-
-        function createQuestionElement(question, questionIndex, container) {
-            const questionCard = document.createElement("div");
-            questionCard.className = "question-card";
-            const qIdBase = `${question.title.replace(/[\s\/\(\)]/g, "")}`;
-            questionCard.id = `q-${qIdBase}-${questionIndex}`;
-
-            const isSubQuestion = typeof questionIndex === 'string';
-            const titlePrefix = isSubQuestion ? '' : `（${chineseNumbers[questionIndex]}）`;
-
-            const h3 = document.createElement("h3");
-            h3.innerHTML = `<span class="title-prefix">${titlePrefix}</span><span class="title-text">${question.title}</span>`;
-            questionCard.appendChild(h3);
-
-            const optionsContainer = document.createElement("div");
-            optionsContainer.className = "options-container";
-            questionCard.appendChild(optionsContainer);
-
-            if (question.type === "input-only" || question.type === "textarea-only") {
-                const input = document.createElement(question.type === "textarea-only" ? "textarea" : "input");
-                input.className = question.type === "textarea-only" ? "full-width-textarea" : "full-width-input";
-                optionsContainer.appendChild(input);
-            } else {
-                const inputType = question.type === "single-choice" ? "radio" : "checkbox";
-                let subContentContainer;
-
-                const hasPotentialSubContent = question.options.some(opt => typeof opt === 'object' && (opt.subQuestions || opt.hasConditionalTemplate));
-                if (hasPotentialSubContent) {
-                    subContentContainer = document.createElement("div");
-                    subContentContainer.className = "sub-content-container hidden";
-                    questionCard.appendChild(subContentContainer);
-                }
-
-                question.options.forEach((option, optionIndex) => {
-                    const isObject = typeof option === 'object' && option !== null;
-                    const optionText = isObject ? option.text : option;
-                    const label = document.createElement("label");
-                    label.className = "option";
-                    const inputId = `${qIdBase}-${questionIndex}-${optionIndex}`;
-                    const inputName = question.name || `${qIdBase}-${questionIndex}`;
-                    label.innerHTML = `<input type="${inputType}" name="${inputName}" value="${optionText}" id="${inputId}">${optionText}`;
-                    optionsContainer.appendChild(label);
-                    const inputElement = label.querySelector("input");
-                    if (isObject && option.hasInputField) {
-                        const inputField = document.createElement("input");
-                        inputField.type = "text";
-                        inputField.placeholder = "請填寫";
-                        inputField.className = "conditional-input";
-                        inputField.style.display = "none";
-                        label.appendChild(inputField);
-                        inputElement.addEventListener("change", () => {
-                            inputField.style.display = inputElement.checked ? "inline-block" : "none";
-                            if (!inputElement.checked) inputField.value = "";
-                        });
-                    }
-                });
-
-                if (subContentContainer) {
-                    const inputName = question.name || `${qIdBase}-${questionIndex}`;
-                    const allInputsInGroup = optionsContainer.querySelectorAll(`input[name="${inputName}"]`);
-                    const handleSubContentDisplay = () => {
-                        const checkedInput = optionsContainer.querySelector(`input[name="${inputName}"]:checked`);
-                        subContentContainer.innerHTML = '';
-                        subContentContainer.classList.add("hidden");
-                        if (!checkedInput) return;
-                        const selectedOptionData = question.options.find(opt => (typeof opt === 'object' ? opt.text : opt) === checkedInput.value);
-
-                        let subQuestionsToShow = [];
-                        if (selectedOptionData && typeof selectedOptionData === 'object') {
-                            if (selectedOptionData.subQuestions) {
-                                subQuestionsToShow = selectedOptionData.subQuestions;
-                            }
-                        }
-                        
-                        if (subQuestionsToShow.length > 0) {
-                            subQuestionsToShow.forEach((subQ, subQIndex) => {
-                                createQuestionElement(subQ, `${questionIndex}-${subQIndex}`, subContentContainer);
-                            });
-                            subContentContainer.classList.remove("hidden");
-
-                            if (question.title === '輔具使用') {
-                                const assistiveDevicesCheckboxes = subContentContainer.querySelectorAll('input[name^="assistive-devices-list"]');
-                                assistiveDevicesCheckboxes.forEach(checkbox => {
-                                    checkbox.addEventListener('change', () => updateMobilityOptions(subContentContainer));
-                                });
-                                updateMobilityOptions(subContentContainer);
-                            }
-                        }
-                    };
-                    allInputsInGroup.forEach(input => {
-                        input.addEventListener('change', handleSubContentDisplay);
-                    });
-                }
-            }
-            container.appendChild(questionCard);
-        }
-
-        function getQuestionData(questionCard, question) {
-            if (!questionCard || !question) return "";
-
-            if (question.type === 'multiple-choice' || question.type === 'single-choice') {
-                const checkedInputs = Array.from(questionCard.querySelectorAll(':scope > .options-container > .option > input:checked'));
-                if (checkedInputs.length > 0) {
-                    return checkedInputs.map(getOptionText).join("、");
-                }
-                return "";
-            }
-            return "";
-        }
-
-        function getOptionText(inputElement) {
-           const label = inputElement.closest('label');
-           if (!label) return inputElement.value; 
-
-           let text = inputElement.value;
-
-           const conditionalInput = label.querySelector('.conditional-input');
-           if (conditionalInput && conditionalInput.style.display !== 'none' && conditionalInput.value.trim()) {
-               text += `（${conditionalInput.value.trim()}）`;
-           }
-
-           const selectElement = label.querySelector('select');
-           if (selectElement && selectElement.value && selectElement.value !== "請選擇") {
-               text += `（${selectElement.value}）`;
-           }
-
-           return text;
-        }
-
-        function parseAnswersFromContainer(optionsContainer) {
-            if (!optionsContainer) return "";
-
-            // 優先 1: 尋找「勾選題」（radio/checkbox）的答案
-            const checkedInputs = Array.from(optionsContainer.querySelectorAll('.option > input:checked'));
-            if (checkedInputs.length > 0) {
-                // 如果找到了，這就是一個 single-choice 或 multiple-choice 題
-                // 使用 getOptionText 來確保能抓到 select 的值
-                return checkedInputs.map(getOptionText).join("、");
-            }
-
-            // 優先 2: 如果找不到勾選題，就尋找「輸入框」（input-only / textarea-only）
-            // 這些題目的輸入框會被直接放在 optionsContainer 裡
-            const simpleInput = optionsContainer.querySelector('input.full-width-input, textarea.full-width-textarea');
-            if (simpleInput && simpleInput.value.trim()) {
-                // 如果找到了，這就是一個 input-only 或 textarea-only 題
-                return simpleInput.value.trim();
-            }
-
-            // 如果以上皆非（例如一個空的勾選題），則回傳空字串
-            return "";
-        }
-
-        function getMobilityData(questionCard) {
-            const selectedOptions = [];
-            const optionsContainer = questionCard.querySelector(".options-container");
-            const labels = optionsContainer.querySelectorAll("label");
-
-            labels.forEach(label => {
-                const checkbox = label.querySelector('input[type="checkbox"]');
-                const select = label.querySelector('select');
-
-                if (checkbox && checkbox.checked) {
-                    let optionText = checkbox.value;
-                    if (select && select.value !== "請選擇") {
-                        optionText += `（${select.value}）`;
-                    }
-                    selectedOptions.push(optionText);
-                }
-            });
-
-            return selectedOptions;
-        }
-
-        function clearForm() {
-            const formInputs = formContainer.querySelectorAll('input, textarea, select');
-            
-            formInputs.forEach(input => {
-                const type = input.type;
-                
-                if (type === 'radio' || type === 'checkbox') {
-                    if (input.checked) { // 只對已勾選的進行操作，效率更高
-                        input.checked = false;
-                        
-                        // ⭐ 魔法就在這裡 ⭐
-                        // 手動觸發 change 事件，通知我們的動態系統進行更新！
-                        input.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                } else {
-                    if (input.value !== '') { // 只對有內容的進行操作
-                        input.value = '';
-                        // 文字輸入框的重置也最好通知一下，以防萬一
-                        input.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                }
-            });
-
-    // 清除頂部的 header 欄位
-    document.getElementById("survey-number").value = '';
-    document.getElementById("machine-number").selectedIndex = 0;
-    document.getElementById("respondent-type").selectedIndex = 0;
-    document.getElementById("flow-three").selectedIndex = 0;
-    
-    // 清除所有未填寫的紅色提醒框
-    const unansweredElements = document.querySelectorAll('.unanswered');
-    unansweredElements.forEach(el => el.classList.remove('unanswered'));
-}
-        
-        function getFormData() {
-            let result = "";
-            const headerFields = {
-                "問卷編號": document.getElementById("survey-number").value.trim(),
-                "主機": document.getElementById("machine-number").value.trim(),
-                "受訪者": document.getElementById("respondent-type").value.trim(),
-                "分流三": document.getElementById("flow-three").value.trim()
-            };
-
-            result += `受訪者：${headerFields["受訪者"]}\n`;
-            result += `---\n`;
-
-            categories.forEach((category, catIndex) => {
-                let categoryContent = "";
-                const categoryElement = document.querySelector(`#cat-${catIndex}`);
-                if (!categoryElement) return;
-
-                category.questions.forEach((question, qIndex) => {
-                    const qElement = categoryElement.querySelector(`#q-${question.title.replace(/[\s\/\(\)]/g, "")}-${qIndex}`);
-                    if (!qElement) return;
-
-                    const titlePrefix = `（${chineseNumbers[qIndex]}）${question.title}`;
-                    let mainAnswerText = "";
-                    let finalOutput = "";
-
-                    if (question.type === "input-only" || question.type === "textarea-only") {
-                        const inputElement = qElement.querySelector("input, textarea");
-                        if (inputElement && inputElement.value.trim()) {
-                            mainAnswerText = inputElement.value.trim();
-                        }
-                    } else {
-                        mainAnswerText = parseAnswersFromContainer(qElement.querySelector('.options-container'));
-                    }
-
-                    if (mainAnswerText) {
-                        // 步驟 2: 建立包含主答案的第一行
-                        finalOutput = `${titlePrefix}：${mainAnswerText}`;
-
-                        const subContentContainer = qElement.querySelector(".sub-content-container:not(.hidden)");
-                        if (subContentContainer) {
-                            const subAnswersString = parseSubQuestionsRecursively(subContentContainer);
-                            
-                            if (subAnswersString) {
-                                finalOutput += subAnswersString;
-                            }
-                        }
-                    }
-
-                    if (finalOutput) {
-                        categoryContent += `${finalOutput}\n\n`;
-                    }
-                });
-
-                if (categoryContent) {
-                    result += `${category.title}\n${categoryContent}`;
-                }
-            });
-
-            return result;
-        }
-
-        function parseSubQuestionsRecursively(container, indent = '  ') {
-            if (!container) return "";
-
-            const directChildQuestionCards = Array.from(container.querySelectorAll(':scope > .question-card'));
-            let outputString = "";
-            
-            const answeredCardsInfo = directChildQuestionCards.map(card => {
-                const title = card.querySelector('h3').textContent.trim();
-                const optionsDiv = card.querySelector(':scope > .options-container');
-                const answer = parseAnswersFromContainer(optionsDiv);
-                const subContainer = card.querySelector('.sub-content-container:not(.hidden)');
-                return { card, title, answer, subContainer };
-            }).filter(info => info.answer);
-
-            answeredCardsInfo.forEach((info, index) => {
-                const isLast = index === answeredCardsInfo.length - 1;
-                const prefix = isLast ? '└' : '├';
-
-                outputString += `\n${indent}${prefix} ${info.title}：${info.answer}`;
-                
-                if (info.subContainer) {
-                    // 傳入子容器，並增加下一層的縮排
-                    outputString += parseSubQuestionsRecursively(info.subContainer, indent + '  ');
-                }
-            });
-
-            return outputString;
-        }
-
-        function getQuestionData(questionCard, question) {
-            if (!questionCard || !question) return "";
-
-            if (question.type === 'multiple-choice' || question.type === 'single-choice') {
-                const checkedInputs = Array.from(questionCard.querySelectorAll(':scope > .options-container > .option > input:checked'));
-                return checkedInputs.map(getOptionText).join("、");
-            }
-            return "";
-        }
+        // ===================================
+        // 使用者介面 (Global Settings & UI)
+        // ===================================
 
         // 表單驗證功能
         function validateForm() {
@@ -1125,6 +947,18 @@
             }
         }
 
+        //切換主題功能
+        function switchTheme(themeName) {
+            const root = document.documentElement;
+            const selectedTheme = themes[themeName];
+            for (const property in selectedTheme) {
+                root.style.setProperty(property, selectedTheme[property]);
+            }
+        }
+
+        // ===================================
+
+        // 建立整個 ICF 電訪問卷的 HTML 結構
         function generateForm() {
             categories.forEach((category, catIndex) => {
                 const categoryDiv = document.createElement("div");
@@ -1140,6 +974,138 @@
             });
         }
 
+        // ===================================
+        // 元件建立與渲染輔助 (Component Creation & Rendering)
+        // ===================================
+
+        // 建立並渲染單個問題的 HTML 元素
+        function createQuestionElement(question, questionIndex, container) {
+            const questionCard = document.createElement("div");
+            questionCard.className = "question-card";
+            const qIdBase = `${question.title.replace(/[\s\/\(\)]/g, "")}`;
+            questionCard.id = `q-${qIdBase}-${questionIndex}`;
+
+            const isSubQuestion = typeof questionIndex === 'string';
+            const titlePrefix = isSubQuestion ? '' : `（${chineseNumbers[questionIndex]}）`;
+
+            const h3 = document.createElement("h3");
+            h3.innerHTML = `<span class="title-prefix">${titlePrefix}</span><span class="title-text">${question.title}</span>`;
+            questionCard.appendChild(h3);
+
+            const optionsContainer = document.createElement("div");
+            optionsContainer.className = "options-container";
+            questionCard.appendChild(optionsContainer);
+
+            if (question.type === "input-only" || question.type === "textarea-only") {
+                const input = document.createElement(question.type === "textarea-only" ? "textarea" : "input");
+                input.className = question.type === "textarea-only" ? "full-width-textarea" : "full-width-input";
+                optionsContainer.appendChild(input);
+            } else {
+                const inputType = question.type === "single-choice" ? "radio" : "checkbox";
+                let subContentContainer;
+
+                const hasPotentialSubContent = question.options.some(opt => typeof opt === 'object' && (opt.subQuestions || opt.hasConditionalTemplate));
+                if (hasPotentialSubContent) {
+                    subContentContainer = document.createElement("div");
+                    subContentContainer.className = "sub-content-container hidden";
+                    questionCard.appendChild(subContentContainer);
+                }
+
+                question.options.forEach((option, optionIndex) => {
+                    const isObject = typeof option === 'object' && option !== null;
+                    const optionText = isObject ? option.text : option;
+                    const label = document.createElement("label");
+                    label.className = "option";
+                    const inputId = `${qIdBase}-${questionIndex}-${optionIndex}`;
+                    const inputName = question.name || `${qIdBase}-${questionIndex}`;
+                    label.innerHTML = `<input type="${inputType}" name="${inputName}" value="${optionText}" id="${inputId}">${optionText}`;
+                    optionsContainer.appendChild(label);
+                    const inputElement = label.querySelector("input");
+                    if (isObject && option.hasInputField) {
+                        const inputField = document.createElement("input");
+                        inputField.type = "text";
+                        inputField.placeholder = "請填寫";
+                        inputField.className = "conditional-input";
+                        inputField.style.display = "none";
+                        label.appendChild(inputField);
+                        inputElement.addEventListener("change", () => {
+                            inputField.style.display = inputElement.checked ? "inline-block" : "none";
+                            if (!inputElement.checked) inputField.value = "";
+                        });
+                    }
+                });
+
+                if (subContentContainer) {
+                    const inputName = question.name || `${qIdBase}-${questionIndex}`;
+                    const allInputsInGroup = optionsContainer.querySelectorAll(`input[name="${inputName}"]`);
+                    const handleSubContentDisplay = () => {
+                        const checkedInput = optionsContainer.querySelector(`input[name="${inputName}"]:checked`);
+                        subContentContainer.innerHTML = '';
+                        subContentContainer.classList.add("hidden");
+                        if (!checkedInput) return;
+                        const selectedOptionData = question.options.find(opt => (typeof opt === 'object' ? opt.text : opt) === checkedInput.value);
+
+                        let subQuestionsToShow = [];
+                        if (selectedOptionData && typeof selectedOptionData === 'object') {
+                            if (selectedOptionData.subQuestions) {
+                                subQuestionsToShow = selectedOptionData.subQuestions;
+                            }
+                        }
+                        
+                        if (subQuestionsToShow.length > 0) {
+                            subQuestionsToShow.forEach((subQ, subQIndex) => {
+                                createQuestionElement(subQ, `${questionIndex}-${subQIndex}`, subContentContainer);
+                            });
+                            subContentContainer.classList.remove("hidden");
+
+                            if (question.title === '輔具使用') {
+                                const assistiveDevicesCheckboxes = subContentContainer.querySelectorAll('input[name^="assistive-devices-list"]');
+                                assistiveDevicesCheckboxes.forEach(checkbox => {
+                                    checkbox.addEventListener('change', () => updateMobilityOptions(subContentContainer));
+                                });
+                                updateMobilityOptions(subContentContainer);
+                            }
+                        }
+                    };
+                    allInputsInGroup.forEach(input => {
+                        input.addEventListener('change', handleSubContentDisplay);
+                    });
+                }
+            }
+            container.appendChild(questionCard);
+        }
+
+        // 遞迴地解析和處理容器內的子問題（Sub-Questions）
+        function parseSubQuestionsRecursively(container, indent = '  ') {
+            if (!container) return "";
+
+            const directChildQuestionCards = Array.from(container.querySelectorAll(':scope > .question-card'));
+            let outputString = "";
+            
+            const answeredCardsInfo = directChildQuestionCards.map(card => {
+                const title = card.querySelector('h3').textContent.trim();
+                const optionsDiv = card.querySelector(':scope > .options-container');
+                const answer = parseAnswersFromContainer(optionsDiv);
+                const subContainer = card.querySelector('.sub-content-container:not(.hidden)');
+                return { card, title, answer, subContainer };
+            }).filter(info => info.answer);
+
+            answeredCardsInfo.forEach((info, index) => {
+                const isLast = index === answeredCardsInfo.length - 1;
+                const prefix = isLast ? '└' : '├';
+
+                outputString += `\n${indent}${prefix} ${info.title}：${info.answer}`;
+                
+                if (info.subContainer) {
+                    // 傳入子容器，並增加下一層的縮排
+                    outputString += parseSubQuestionsRecursively(info.subContainer, indent + '  ');
+                }
+            });
+
+            return outputString;
+        }
+
+        // 建立用於選擇「移動/活動能力 (Mobility)」相關選項的 Select (下拉式選單) 元素
         function createMobilitySelect() {
             const select = document.createElement('select');
             select.name = 'mobility-select';
@@ -1160,6 +1126,242 @@
             return select;
         }
 
+        // 建立用於「移動/活動能力」區塊的單個選項元素（如 Radio 或 Checkbox）
+        function createMobilityOptionElement(questionCardId, value, isChecked = false) {
+            const label = document.createElement("label");
+            label.className = "option";
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.name = `${questionCardId}-devices`; 
+            checkbox.value = value;
+            checkbox.checked = isChecked;
+
+            label.appendChild(checkbox);
+            label.appendChild(document.createTextNode(value));
+
+            const select = createMobilitySelect();
+            select.disabled = !isChecked; // 初始化時根據是否勾選來禁用
+            label.appendChild(select);
+
+            return label;
+        }
+
+        // --- 身心障礙福利資料庫模組---
+        // 1. 設定資料來源
+        const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT01_KXlCmpnlBwu0mqiix2GIi08QyF7ds5aN_UPiYM9RwANk2GThj_g8gnGA5edsF0YZuY2OTtWnX2/pub?gid=0&single=true&output=csv';
+
+        // ⭐ 加上代理伺服器 (這是解決無法載入的關鍵)
+        const CSV_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(GOOGLE_SHEET_URL);
+
+        let welfareData = []; 
+
+        // 2. UI 元素控制
+        const sidebar = document.getElementById('welfare-sidebar');
+        const toggleBtn = document.getElementById('welfare-toggle-btn');
+        const closeBtn = document.getElementById('welfare-close-btn');
+        const searchInput = document.getElementById('welfare-search-input');
+        const resultsContainer = document.getElementById('welfare-results-container');
+
+        // 3. 事件監聽
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.add('open');
+            if (welfareData.length === 0) {
+                fetchWelfareData();
+            }
+        });
+
+        closeBtn.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+        });
+
+        searchInput.addEventListener('input', (e) => {
+            const keyword = e.target.value.toLowerCase();
+            filterAndRender(keyword);
+        });
+
+        // 4. 抓取並解析 CSV 資料
+        function fetchWelfareData() {
+            resultsContainer.innerHTML = '<div class="loading-text">資料下載中...請稍候</div>';
+            
+            fetch(CSV_URL)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(csvText => {
+                    // 檢查是否抓到了錯誤的內容 (有時候代理伺服器會回傳空的)
+                    if (!csvText || csvText.length < 10) {
+                        throw new Error('Empty response');
+                    }
+                    welfareData = parseCSV(csvText);
+                    renderResults(welfareData);
+                })
+                .catch(error => {
+                    console.error('詳細錯誤資訊:', error); // 這行會讓您在 F12 看到真正原因
+                    resultsContainer.innerHTML = `
+                        <div class="loading-text" style="color:red;">
+                            無法載入資料。<br>
+                            <small>錯誤代碼: ${error.message}</small>
+                        </div>`;
+                });
+        }
+
+        // ⭐ 專業級 CSV 解析器 (可完美處理儲存格內的換行與逗號)
+        function parseCSV(text) {
+            // 1. 移除 BOM 防止亂碼
+            let source = text.replace(/^\uFEFF/, ''); 
+            
+            const rows = [];
+            let currentRow = [];
+            let currentField = '';
+            let inQuotes = false;
+
+            // 2. 逐字解析 (Character-by-character parsing)
+            for (let i = 0; i < source.length; i++) {
+                const char = source[i];
+                const nextChar = source[i + 1];
+
+                if (char === '"') {
+                    // 處理雙引號
+                    if (inQuotes && nextChar === '"') {
+                        // 如果是連續兩個雙引號，表示內容中的一個引號 (轉義)
+                        currentField += '"';
+                        i++; // 跳過下一個引號
+                    } else {
+                        // 切換引號狀態 (開始或結束一個引號區塊)
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    // 遇到逗號，且不在引號內 -> 欄位結束
+                    currentRow.push(currentField);
+                    currentField = '';
+                } else if ((char === '\r' || char === '\n') && !inQuotes) {
+                    // 遇到換行，且不在引號內 -> 整列結束
+                    // 處理 \r\n 的情況，如果現在是 \r 且下一個是 \n，則跳過 \n
+                    if (char === '\r' && nextChar === '\n') {
+                        i++;
+                    }
+                    
+                    // 只有當這一行不是空的，才存入
+                    // (避免檔案最後多一個空行導致產生空物件)
+                    if (currentRow.length > 0 || currentField.trim() !== '') {
+                        currentRow.push(currentField);
+                        rows.push(currentRow);
+                    }
+                    
+                    currentRow = [];
+                    currentField = '';
+                } else {
+                    // 一般字元，直接加入目前欄位
+                    currentField += char;
+                }
+            }
+
+            // 補上最後一列 (如果檔案不是以換行結束)
+            if (currentRow.length > 0 || currentField.trim() !== '') {
+                currentRow.push(currentField);
+                rows.push(currentRow);
+            }
+
+            // 3. 將陣列轉換為物件 (Mapping)
+            if (rows.length < 2) return []; // 沒有資料
+
+            // 標題列通常是第一列，但為了保險，我們把前後空白去掉
+            const headers = rows[0].map(h => h.trim());
+            
+            const result = [];
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                // 只有當欄位數量跟標題數量大致相符才處理
+                // (放寬標準：只要有資料就算)
+                if (row.length > 0) {
+                    const obj = {};
+                    headers.forEach((header, index) => {
+                        // 對應標題與內容
+                        obj[header] = row[index] ? row[index].trim() : '';
+                    });
+                    result.push(obj);
+                }
+            }
+            return result;
+        }
+
+        // 5. 搜尋與渲染邏輯
+        function filterAndRender(keyword) {
+            if (!keyword) {
+                renderResults(welfareData);
+                return;
+            }
+            
+            const filtered = welfareData.filter(item => {
+                return Object.values(item).some(val => 
+                    val.toLowerCase().includes(keyword)
+                );
+            });
+            
+            renderResults(filtered);
+        }
+
+        // ⭐ 針對您的資料結構客製化的渲染函式
+        function renderResults(data) {
+            resultsContainer.innerHTML = '';
+
+            // 輔助函式：將資料中的換行符號 (\n) 轉換為 HTML 的 <br> 標籤
+            const formatText = (text) => {
+                if (!text) return '';
+                return text.replace(/\n/g, '<br>');
+            };
+            
+            if (data.length === 0) {
+                resultsContainer.innerHTML = '<div class="loading-text">找不到符合的福利項目</div>';
+                return;
+            }
+            
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'welfare-card';
+                
+                // 取得並格式化資料
+                const title = item['資源名稱'] || '未命名項目';
+                const category = item['經濟／支持'] || '一般';
+                
+                // 確保內容變數也經過 formatText 處理
+                const content = formatText(item['福利內容'] || '無詳細說明');
+                const requirementText = item['申請資格'] || '';
+                const contactText = item['窗口'] || '';
+
+                // 確保內容顯示換行
+                const requirement = requirementText 
+                    ? `<p><strong>須符合以下條件方可申請：</strong><br>${formatText(requirementText)}</p>` 
+                    : '';
+                // 確保窗口顯示換行
+                const contact = contactText 
+                    ? `<p><strong>窗口：</strong><br>${formatText(contactText)}</p>` 
+                    : '';
+
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <h4 style="margin:0; color:#2c3e50;">${title}</h4>
+                        <span class="welfare-tag">${category}</span>
+                    </div>
+                    <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
+                    
+                    <p><strong>內容：</strong><br>${content}</p>  ${requirement}
+                    ${contact}
+                `;
+                
+                resultsContainer.appendChild(card);
+            });
+        }
+
+        // ===================================
+        // 表單功能與狀態管理 (Form Utility & Management)
+        // ===================================
+
+        // 根據當前表單狀態或其他條件，動態更新「移動/活動能力」選項區塊的內容
         function updateMobilityOptions(container) {
             if (!container) return;
 
@@ -1176,7 +1378,6 @@
             indoorOptionsContainer.innerHTML = '';
             outdoorOptionsContainer.innerHTML = '';
             
-            // ⭐【核心升級】: 建立一個更強大的選項生成器 (內部輔助函式)
             const createMobilityOption = (deviceName, namePrefix) => {
                 const label = document.createElement('label');
                 label.className = 'option';
@@ -1231,25 +1432,183 @@
             });
         }
 
-        function createMobilityOptionElement(questionCardId, value, isChecked = false) {
-    const label = document.createElement("label");
-    label.className = "option";
+        // 清空或重設整個表單的所有輸入欄位和選擇狀態
+        function clearForm() {
+            const formInputs = formContainer.querySelectorAll('input, textarea, select');
+            
+            formInputs.forEach(input => {
+                const type = input.type;
+                
+                if (type === 'radio' || type === 'checkbox') {
+                    if (input.checked) { // 只對已勾選的進行操作，效率更高
+                        input.checked = false;
+                        
+                        // ⭐ 魔法就在這裡 ⭐
+                        // 手動觸發 change 事件，通知我們的動態系統進行更新！
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                } else {
+                    if (input.value !== '') { // 只對有內容的進行操作
+                        input.value = '';
+                        // 文字輸入框的重置也最好通知一下，以防萬一
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                }
+            });
 
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.name = `${questionCardId}-devices`; 
-    checkbox.value = value;
-    checkbox.checked = isChecked;
-
-    label.appendChild(checkbox);
-    label.appendChild(document.createTextNode(value));
-
-    const select = createMobilitySelect();
-    select.disabled = !isChecked; // 初始化時根據是否勾選來禁用
-    label.appendChild(select);
-
-    return label;
+    // 清除頂部的 header 欄位
+    document.getElementById("survey-number").value = '';
+    document.getElementById("machine-number").selectedIndex = 0;
+    document.getElementById("respondent-type").selectedIndex = 0;
+    document.getElementById("flow-three").selectedIndex = 0;
+    
+    // 清除所有未填寫的紅色提醒框
+    const unansweredElements = document.querySelectorAll('.unanswered');
+    unansweredElements.forEach(el => el.classList.remove('unanswered'));
 }
+
+        // ============================================
+        // 資料擷取與解析 (Data Collection & Parsing)
+        // ============================================
+
+        // 收集並回傳整個 ICF 電訪問卷表單的使用者填寫資料
+        function getFormData() {
+            let result = "";
+            const headerFields = {
+                "問卷編號": document.getElementById("survey-number").value.trim(),
+                "主機": document.getElementById("machine-number").value.trim(),
+                "受訪者": document.getElementById("respondent-type").value.trim(),
+                "分流三": document.getElementById("flow-three").value.trim()
+            };
+
+            categories.forEach((category, catIndex) => {
+                let categoryContent = "";
+                const categoryElement = document.querySelector(`#cat-${catIndex}`);
+                if (!categoryElement) return;
+
+                category.questions.forEach((question, qIndex) => {
+                    const qElement = categoryElement.querySelector(`#q-${question.title.replace(/[\s\/\(\)]/g, "")}-${qIndex}`);
+                    if (!qElement) return;
+
+                    const titlePrefix = `（${chineseNumbers[qIndex]}）${question.title}`;
+                    let mainAnswerText = "";
+                    let finalOutput = "";
+
+                    if (question.type === "input-only" || question.type === "textarea-only") {
+                        const inputElement = qElement.querySelector("input, textarea");
+                        if (inputElement && inputElement.value.trim()) {
+                            mainAnswerText = inputElement.value.trim();
+                        }
+                    } else {
+                        mainAnswerText = parseAnswersFromContainer(qElement.querySelector('.options-container'));
+                    }
+
+                    if (mainAnswerText) {
+                        // 步驟 2: 建立包含主答案的第一行
+                        finalOutput = `${titlePrefix}：${mainAnswerText}`;
+
+                        const subContentContainer = qElement.querySelector(".sub-content-container:not(.hidden)");
+                        if (subContentContainer) {
+                            const subAnswersString = parseSubQuestionsRecursively(subContentContainer);
+                            
+                            if (subAnswersString) {
+                                finalOutput += subAnswersString;
+                            }
+                        }
+                    }
+
+                    if (finalOutput) {
+                        categoryContent += `${finalOutput}\n\n`;
+                    }
+                });
+
+                if (categoryContent) {
+                    result += `${category.title}\n${categoryContent}`;
+                }
+            });
+
+            return result;
+        }
+
+        // 從特定問題卡片的 HTML 元素中，擷取出使用者的回答資料
+        function getQuestionData(questionCard, question) {
+            if (!questionCard || !question) return "";
+
+            if (question.type === 'multiple-choice' || question.type === 'single-choice') {
+                const checkedInputs = Array.from(questionCard.querySelectorAll(':scope > .options-container > .option > input:checked'));
+                if (checkedInputs.length > 0) {
+                    return checkedInputs.map(getOptionText).join("、");
+                }
+                return "";
+            }
+            return "";
+        }
+
+        // 從特定問題卡片中，擷取與「移動/活動能力 (Mobility)」相關的資料
+        function getMobilityData(questionCard) {
+            const selectedOptions = [];
+            const optionsContainer = questionCard.querySelector(".options-container");
+            const labels = optionsContainer.querySelectorAll("label");
+
+            labels.forEach(label => {
+                const checkbox = label.querySelector('input[type="checkbox"]');
+                const select = label.querySelector('select');
+
+                if (checkbox && checkbox.checked) {
+                    let optionText = checkbox.value;
+                    if (select && select.value !== "請選擇") {
+                        optionText += `（${select.value}）`;
+                    }
+                    selectedOptions.push(optionText);
+                }
+            });
+
+            return selectedOptions;
+        }
+
+        // 解析選項容器（Options Container）中的使用者選擇，並整理成回答陣列或物件
+        function parseAnswersFromContainer(optionsContainer) {
+            if (!optionsContainer) return "";
+
+            // 優先 1: 尋找「勾選題」（radio/checkbox）的答案
+            const checkedInputs = Array.from(optionsContainer.querySelectorAll('.option > input:checked'));
+            if (checkedInputs.length > 0) {
+                // 如果找到了，這就是一個 single-choice 或 multiple-choice 題
+                // 使用 getOptionText 來確保能抓到 select 的值
+                return checkedInputs.map(getOptionText).join("、");
+            }
+
+            // 優先 2: 如果找不到勾選題，就尋找「輸入框」（input-only / textarea-only）
+            // 這些題目的輸入框會被直接放在 optionsContainer 裡
+            const simpleInput = optionsContainer.querySelector('input.full-width-input, textarea.full-width-textarea');
+            if (simpleInput && simpleInput.value.trim()) {
+                // 如果找到了，這就是一個 input-only 或 textarea-only 題
+                return simpleInput.value.trim();
+            }
+
+            // 如果以上皆非（例如一個空的勾選題），則回傳空字串
+            return "";
+        }
+
+        // 取得輸入元素（如 Radio 或 Checkbox）所對應的選項文字描述
+        function getOptionText(inputElement) {
+           const label = inputElement.closest('label');
+           if (!label) return inputElement.value; 
+
+           let text = inputElement.value;
+
+           const conditionalInput = label.querySelector('.conditional-input');
+           if (conditionalInput && conditionalInput.style.display !== 'none' && conditionalInput.value.trim()) {
+               text += `（${conditionalInput.value.trim()}）`;
+           }
+
+           const selectElement = label.querySelector('select');
+           if (selectElement && selectElement.value && selectElement.value !== "請選擇") {
+               text += `（${selectElement.value}）`;
+           }
+
+           return text;
+        }
 
         document.addEventListener("DOMContentLoaded", () => {
             generateForm();
