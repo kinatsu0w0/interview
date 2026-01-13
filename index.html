@@ -451,7 +451,7 @@
                     {
                         title: "精神狀況",
                         type: "multiple-choice",
-                        options: ["情緒穩定", "情緒不穩定", "幻聽、幻覺", "妄想", "脫序行為", "人際退縮", "憂鬱", "日夜顛倒", "嗜睡", { text: "其他／補充說明", hasInputField: true }],
+                        options: ["情緒穩定", "情緒不穩定", "幻聽、幻覺", "妄想", "脫序行為", "人際退縮", "日夜顛倒", "嗜睡", { text: "其他／補充說明", hasInputField: true }],
                     },
                     {
                         title: "表達功能",
@@ -494,7 +494,7 @@
                                         title: "目前有使用的輔具",
                                         type: "multiple-choice",
                                         name: "assistive-devices-list",
-                                        options: ["單拐", "四腳拐", "雨傘拐", "助行器", "輪椅", "電動輪椅", "電動代步車", "助聽器", "便盆椅", "沐浴椅", "氣墊床墊", "病床","電動床", { text: "其他", hasInputField: true }],
+                                        options: ["單拐", "四腳拐", "雨傘拐", "助行器", "助步車", "輪椅", "電動輪椅", "電動代步車", "助聽器", "便盆椅", "沐浴椅", "氣墊床墊", "病床","電動床", { text: "其他", hasInputField: true }],
                                     },
                                     {
                                         title: "居家／熟悉環境的移動方式",
@@ -565,22 +565,22 @@
                                     {
                                         title: "進食方式",
                                         type: "multiple-choice",
-                                        options: ["自行使用餐具", "他人餵食", "管灌","營養輸液注射"],
+                                        options: ["他人餵食", "管灌","營養輸液注射"],
                                     },
                                     {
                                         title: "如廁狀況",
-                                        type: "single-choice",
-                                        options: ["不須叮嚀", "須叮嚀","部份協助", "尿布", "尿管"],
+                                        type: "multiple-choice",
+                                        options: ["部份協助", "尿布", "尿管"],
                                     },
                                     {
                                         title: "沐浴方式",
                                         type: "single-choice",
-                                        options: ["不須叮嚀", "須叮嚀","部份協助",  "他人協助"],
+                                        options: ["部份協助",  "他人協助"],
                                     },
                                     {
                                         title: "穿脫衣服",
                                         type: "single-choice",
-                                        options: ["自理", "他人協助", "完全依賴他人"],
+                                        options: ["他人部分協助", "完全依賴他人"],
                                     },
                                 ],
                             },
@@ -589,7 +589,7 @@
                     {
                         title: "就醫情形",
                         type: "single-choice",
-                        options: ["定期就醫", "生病卻長期未就醫", "有需求時再去", { text: "其他／補充說明", hasInputField: true }],
+                        options: ["定期就醫" , "生病卻長期未就醫", "有需求時再去","居家醫療" , { text: "其他／補充說明", hasInputField: true }],
                     },
                     {
                         title: "就業狀況",
@@ -766,7 +766,7 @@
                                     },
                                 ]
                             },
-                            "依靠存款",
+                            "存款",
                             { text: "家人經濟援助", hasInputField: true },
                             { text: "其他", hasInputField: true },
                         ],
@@ -1701,4 +1701,5 @@
     </script>
 </body>
 </html>
+
 
