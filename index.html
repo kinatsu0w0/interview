@@ -1698,9 +1698,76 @@
 
             document.getElementById("clear-btn").addEventListener("click", clearForm);
         });
+
+		// --- 自動暫存功能模組 ---
+
+// 1. 設定儲存的 Key 名稱 (可以自訂)
+const STORAGE_KEY = 'disability_form_draft';
+
+// 2. 當頁面載入完成時，恢復之前的暫存資料
+document.addEventListener('DOMContentLoaded', () => {
+    restoreFormData();
+    
+    // 3. 監聽頁面上所有的輸入變動
+    // 只要有任何 input, textarea, select 改變，就觸發存檔
+    document.addEventListener('input', (event) => {
+        if (event.target.matches('input, textarea, select')) {
+            saveFormData();
+        }
+    });
+});
+
+// 函式：將目前的表單內容存入 localStorage
+function saveFormData() {
+    const formData = {};
+    
+    // 抓取頁面上所有具有 id 的輸入欄位
+    const inputs = document.querySelectorAll('input, textarea, select');
+    
+    inputs.forEach(input => {
+        if (input.id) { // 必須有 id 才能對應存檔
+            if (input.type === 'checkbox' || input.type === 'radio') {
+                formData[input.id] = input.checked;
+            } else {
+                formData[input.id] = input.value;
+            }
+        }
+    });
+
+    // 轉成 JSON 字串儲存
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+    console.log('草稿已自動儲存...'); // 測試用，穩定後可刪除
+}
+
+// 函式：從 localStorage 讀取並恢復資料
+function restoreFormData() {
+    const savedData = localStorage.getItem(STORAGE_KEY);
+    
+    if (savedData) {
+        const formData = JSON.parse(savedData);
+        
+        Object.keys(formData).forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                if (element.type === 'checkbox' || element.type === 'radio') {
+                    element.checked = formData[id];
+                } else {
+                    element.value = formData[id];
+                }
+            }
+        });
+        console.log('已從暫存恢復資料！');
+    }
+}
+
+// 💡 額外建議：當使用者「正式提交」問卷成功後，要記得清空暫存
+function clearDraft() {
+    localStorage.removeItem(STORAGE_KEY);
+}
     </script>
 </body>
 </html>
+
 
 
 
