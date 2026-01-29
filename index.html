@@ -1423,7 +1423,7 @@
                 return label;
             };
             
-            // ⭐【需求 1】: 為 "不使用輔具" 也使用新的生成器，讓它也擁有 select
+            // ⭐ 為 "不使用輔具" 也使用新的生成器，讓它也擁有 select
             indoorOptionsContainer.appendChild(createMobilityOption('不使用輔具', 'indoor-mobility'));
             outdoorOptionsContainer.appendChild(createMobilityOption('不使用輔具', 'outdoor-mobility'));
 
@@ -1436,39 +1436,53 @@
         }
 
         // 清空或重設整個表單的所有輸入欄位和選擇狀態
-        function clearForm() {
+            function clearForm() {
+            // 1.增加確認視窗，防止誤按
+            if (!confirm("⚠️ 將清除所有已填寫的內容以及草稿且無法復原。\n\n確定要清除表單嗎？")) {
+                return; // 如果使用者按「取消」，就什麼都不做，直接結束
+            }
+				
+            // 2.清除 localStorage 中的暫存檔 (這就是 F5 資料會回來的元兇)
+            localStorage.removeItem(STORAGE_KEY); 
+				
+            // 3.清除畫面上的輸入
             const formInputs = formContainer.querySelectorAll('input, textarea, select');
             
             formInputs.forEach(input => {
                 const type = input.type;
-                
                 if (type === 'radio' || type === 'checkbox') {
-                    if (input.checked) { // 只對已勾選的進行操作，效率更高
+                    if (input.checked) {
                         input.checked = false;
-                        
-                        // ⭐ 魔法就在這裡 ⭐
-                        // 手動觸發 change 事件，通知我們的動態系統進行更新！
+                        // 觸發 change 事件讓關聯的子題目隱藏
                         input.dispatchEvent(new Event('change', { bubbles: true }));
                     }
                 } else {
-                    if (input.value !== '') { // 只對有內容的進行操作
+                    if (input.value !== '') {
                         input.value = '';
-                        // 文字輸入框的重置也最好通知一下，以防萬一
                         input.dispatchEvent(new Event('change', { bubbles: true }));
                     }
                 }
             });
 
-    // 清除頂部的 header 欄位
-    document.getElementById("survey-number").value = '';
-    document.getElementById("machine-number").selectedIndex = 0;
-    document.getElementById("respondent-type").selectedIndex = 0;
-    document.getElementById("flow-three").selectedIndex = 0;
-    
-    // 清除所有未填寫的紅色提醒框
-    const unansweredElements = document.querySelectorAll('.unanswered');
-    unansweredElements.forEach(el => el.classList.remove('unanswered'));
-}
+            // 清除頂部的 header 欄位
+                document.getElementById("survey-number").value = '';
+                document.getElementById("machine-number").selectedIndex = 0;
+                document.getElementById("respondent-type").selectedIndex = 0;
+                document.getElementById("flow-three").selectedIndex = 0;
+                
+                // 清除家系圖的畫布 (如果有的話)
+                // 這裡假設您的家系圖變數名稱是 myGenogramInstance
+                if (window.myGenogramInstance) {
+                    window.myGenogramInstance.clear(); 
+                    document.getElementById('genogram-data').value = '';
+                }
+
+                // 清除未填寫的紅色提醒
+                const unansweredElements = document.querySelectorAll('.unanswered');
+                unansweredElements.forEach(el => el.classList.remove('unanswered'));
+                
+                alert("表單與暫存資料已清除完成！");
+            }
 
         // ============================================
         // 資料擷取與解析 (Data Collection & Parsing)
@@ -1701,73 +1715,68 @@
 
 		// --- 自動暫存功能模組 ---
 
-// 1. 設定儲存的 Key 名稱 (可以自訂)
-const STORAGE_KEY = 'disability_form_draft';
+		// 1. 設定儲存的 Key 名稱 (可以自訂)
+		const STORAGE_KEY = 'disability_form_draft';
 
-// 2. 當頁面載入完成時，恢復之前的暫存資料
-document.addEventListener('DOMContentLoaded', () => {
-    restoreFormData();
-    
-    // 3. 監聽頁面上所有的輸入變動
-    // 只要有任何 input, textarea, select 改變，就觸發存檔
-    document.addEventListener('input', (event) => {
-        if (event.target.matches('input, textarea, select')) {
-            saveFormData();
-        }
-    });
-});
+		// 2. 當頁面載入完成時，恢復之前的暫存資料
+		document.addEventListener('DOMContentLoaded', () => {
+		    restoreFormData();
+		    
+		    // 3. 監聽頁面上所有的輸入變動
+		    // 只要有任何 input, textarea, select 改變，就觸發存檔
+		    document.addEventListener('input', (event) => {
+		        if (event.target.matches('input, textarea, select')) {
+		            saveFormData();
+		        }
+		    });
+		});
 
-// 函式：將目前的表單內容存入 localStorage
-function saveFormData() {
-    const formData = {};
-    
-    // 抓取頁面上所有具有 id 的輸入欄位
-    const inputs = document.querySelectorAll('input, textarea, select');
-    
-    inputs.forEach(input => {
-        if (input.id) { // 必須有 id 才能對應存檔
-            if (input.type === 'checkbox' || input.type === 'radio') {
-                formData[input.id] = input.checked;
-            } else {
-                formData[input.id] = input.value;
-            }
-        }
-    });
-
-    // 轉成 JSON 字串儲存
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-    console.log('草稿已自動儲存...'); // 測試用，穩定後可刪除
-}
-
-// 函式：從 localStorage 讀取並恢復資料
-function restoreFormData() {
-    const savedData = localStorage.getItem(STORAGE_KEY);
-    
-    if (savedData) {
-        const formData = JSON.parse(savedData);
-        
-        Object.keys(formData).forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                if (element.type === 'checkbox' || element.type === 'radio') {
-                    element.checked = formData[id];
-                } else {
-                    element.value = formData[id];
-                }
-            }
-        });
-        console.log('已從暫存恢復資料！');
-    }
-}
-
-// 💡 額外建議：當使用者「正式提交」問卷成功後，要記得清空暫存
-function clearDraft() {
-    localStorage.removeItem(STORAGE_KEY);
-}
+		// 函式：將目前的表單內容存入 localStorage
+		function saveFormData() {
+		    const formData = {};
+		    
+		    // 抓取頁面上所有具有 id 的輸入欄位
+		    const inputs = document.querySelectorAll('input, textarea, select');
+		    
+		    inputs.forEach(input => {
+		        if (input.id) { // 必須有 id 才能對應存檔
+		            if (input.type === 'checkbox' || input.type === 'radio') {
+		                formData[input.id] = input.checked;
+		            } else {
+		                formData[input.id] = input.value;
+		            }
+		        }
+		    });
+		
+		    // 轉成 JSON 字串儲存
+		    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+		}
+		
+		// 函式：從 localStorage 讀取並恢復資料
+		function restoreFormData() {
+		    const savedData = localStorage.getItem(STORAGE_KEY);
+		    
+		    if (savedData) {
+		        const formData = JSON.parse(savedData);
+		        
+		        Object.keys(formData).forEach(id => {
+		            const element = document.getElementById(id);
+		            if (element) {
+		                if (element.type === 'checkbox' || element.type === 'radio') {
+		                    element.checked = formData[id];
+		                } else {
+		                    element.value = formData[id];
+		                }
+		            }
+		        });
+		        console.log('已從暫存恢復資料！');
+		    }
+		}
+		
+		// 💡 額外建議：當使用者「正式提交」問卷成功後，要記得清空暫存
+		function clearDraft() {
+		    localStorage.removeItem(STORAGE_KEY);
+		}
     </script>
 </body>
 </html>
-
-
-
-
